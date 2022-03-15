@@ -1,5 +1,6 @@
 import math
 import random
+import warp
 
 import cv2
 import numpy as np
@@ -42,7 +43,27 @@ def computeHomography(f1, f2, matches, A_out=None):
         #Fill in the matrix A in this loop.
         #Access elements using square brackets. e.g. A[0,0]
         #TODO-BLOCK-BEGIN
-        raise Exception("TODO in alignment.py not implemented")
+
+        A[2*i,0] = a_x
+        A[2*i,1] = a_y
+        A[2*i,2] = 1
+        A[2*i,3] = 0
+        A[2*i,4] = 0
+        A[2*i,5] = 0
+        A[2*i,6] = -b_x*a_x
+        A[2*i,7] = -b_x*a_y
+        A[2*i,8] = -b_x
+
+        A[2*i+1,0] = 0
+        A[2*i+1,1] = 0
+        A[2*i+1,2] = 0
+        A[2*i+1,3] = a_x
+        A[2*i+1,4] = a_y
+        A[2*i+1,5] = 1
+        A[2*i+1,6] = -b_y*a_x
+        A[2*i+1,7] = -b_y*a_y
+        A[2*i+1,8] = -b_y
+
         #TODO-BLOCK-END
         #END TODO
 
@@ -62,7 +83,18 @@ def computeHomography(f1, f2, matches, A_out=None):
     #BEGIN TODO 3
     #Fill the homography H with the appropriate elements of the SVD
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in alignment.py not implemented")
+
+    H[0,0] = Vt[8,0]
+    H[0,1] = Vt[8,1]
+    H[0,2] = Vt[8,2]
+    H[1,0] = Vt[8,3]
+    H[1,1] = Vt[8,4]
+    H[1,2] = Vt[8,5]
+    H[2,0] = Vt[8,6]
+    H[2,1] = Vt[8,7]
+    H[2,2] = Vt[8,8]
+
+    # raise Exception("TODO in alignment.py not implemented")
     #TODO-BLOCK-END
     #END TODO
 
@@ -91,6 +123,8 @@ def alignPair(f1, f2, matches, m, nRANSAC, RANSACthresh):
         compute the least squares motion estimate using the inliers,
         and return as a transformation matrix M.
     '''
+#     eTranslate = 0
+# eHomography = 1
 
     #BEGIN TODO 4
     #Write this entire method.  You need to handle two types of
@@ -103,7 +137,19 @@ def alignPair(f1, f2, matches, m, nRANSAC, RANSACthresh):
     #This function should also call get_inliers and, at the end,
     #least_squares_fit.
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in alignment.py not implemented")
+    for n in range(nRANSAC):
+        if m == 1: # eHomography
+            sample_matches = random.sample(matches, 4)
+            h = computeHomography(f1, f2, sample_matches)
+        elif m == 0:
+            sample_matches = random.sample(matches, 1)
+            (x, y) = f1[sample_matches.queryIdx].pt
+            (x2, y2) = f2[sample_matches.trainIdx].pt
+            h = np.array([x2-x, y2-y])
+        inliers = getInliers(f1, f2, matches, h, RANSACthresh)
+        M = leastSquaresFit(f1, f2, matches, m, inliers)
+        
+    # raise Exception("TODO in alignment.py not implemented")
     #TODO-BLOCK-END
     #END TODO
     return M
@@ -138,7 +184,14 @@ def getInliers(f1, f2, matches, M, RANSACthresh):
         #by M, is within RANSACthresh of its match in f2.
         #If so, append i to inliers
         #TODO-BLOCK-BEGIN
-        raise Exception("TODO in alignment.py not implemented")
+        (a_x, a_y) = f1[matches[i].queryIdx].pt
+        (b_x, b_y) = f2[matches[i].trainIdx].pt
+        vector = [a_x, a_y, 1]
+        transformed = np.dot(vector, M)
+        dist = np.linalg.norm([b_x, b_y, 1]-transformed)
+        if dist < RANSACthresh:
+            inlier_indices.append(i)
+        # raise Exception("TODO in alignment.py not implemented")
         #TODO-BLOCK-END
         #END TODO
 
@@ -183,7 +236,11 @@ def leastSquaresFit(f1, f2, matches, m, inlier_indices):
             #Use this loop to compute the average translation vector
             #over all inliers.
             #TODO-BLOCK-BEGIN
-            raise Exception("TODO in alignment.py not implemented")
+            (a_x, a_y) = f1[matches[inlier_indices[i]].queryIdx].pt
+            (b_x, b_y) = f2[matches[inlier_indices[i]].trainIdx].pt
+            u = b_x - a_x
+            v = b_y - a_y
+            # raise Exception("TODO in alignment.py not implemented")
             #TODO-BLOCK-END
             #END TODO
 
@@ -198,7 +255,13 @@ def leastSquaresFit(f1, f2, matches, m, inlier_indices):
         #Compute a homography M using all inliers.
         #This should call computeHomography.
         #TODO-BLOCK-BEGIN
-        raise Exception("TODO in alignment.py not implemented")
+
+        inlier_matches = []
+        for i in range(len(inlier_indices)):
+            inlier_matches.append(matches[inlier_indices[i]])
+
+        M = computeHomography(f1, f2, inlier_matches)
+        # raise Exception("TODO in alignment.py not implemented")
         #TODO-BLOCK-END
         #END TODO
 
