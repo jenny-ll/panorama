@@ -29,6 +29,8 @@ def imageBoundingBox(img, M):
     """
     #TODO 8
     #TODO-BLOCK-BEGIN
+    
+
     raise Exception("TODO in blend.py not implemented")
     #TODO-BLOCK-END
     return int(minX), int(minY), int(maxX), int(maxY)
