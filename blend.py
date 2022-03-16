@@ -24,15 +24,43 @@ def imageBoundingBox(img, M):
        OUTPUT:
          minX: int for the minimum X value of a corner
          minY: int for the minimum Y value of a corner
-         minX: int for the maximum X value of a corner
-         minY: int for the maximum Y value of a corner
+         maxX: int for the maximum X value of a corner
+         maxY: int for the maximum Y value of a corner
     """
     #TODO 8
     #TODO-BLOCK-BEGIN
-    
 
-    raise Exception("TODO in blend.py not implemented")
-    #TODO-BLOCK-END
+    height, width = img.shape[0], img.shape[1]
+
+    corner1 = [0,0,1]
+    corner2 = [0, height-1, 1]
+    corner3 = [width-1, 0, 1]
+    corner4 = [width-1, height-1, 1]
+
+    transformed_corner1 = np.dot(M, corner1)
+    transformed_corner2 = np.dot(M, corner2)
+    transformed_corner3 = np.dot(M, corner3)
+    transformed_corner4 = np.dot(M, corner4)
+
+    homo_c1 = transformed_corner1 / transformed_corner1[2]
+    homo_c2 = transformed_corner2 / transformed_corner2[2]
+    homo_c3 = transformed_corner3 / transformed_corner3[2]
+    homo_c4 = transformed_corner4 / transformed_corner4[2]
+
+    transformed_corners = np.zeros((4,3))
+
+    transformed_corners[0] = homo_c1
+    transformed_corners[1] = homo_c2
+    transformed_corners[2] = homo_c3
+    transformed_corners[3] = homo_c4
+
+    minX = np.amin(transformed_corners[:,0])
+    maxX = np.amax(transformed_corners[:,0])
+    minY = np.amin(transformed_corners[:,1])
+    maxY = np.amax(transformed_corners[:,1])
+
+    # raise Exception("TODO in blend.py not implemented")
+    # TODO-BLOCK-END
     return int(minX), int(minY), int(maxX), int(maxY)
 
 
@@ -51,7 +79,28 @@ def accumulateBlend(img, acc, M, blendWidth):
     # BEGIN TODO 10
     # Fill in this routine
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
+
+    minX, minY, maxX, maxY = imageBoundingBox(img, M)
+    height, width = img.shape[0], img.shape[1]
+
+    for i in range(minX, maxX):
+        for j in range(minY, maxY):
+            pixel = np.array([i, j, 1]).T
+            inv_warp_pixel = np.dot(np.linalg.inv(M), pixel)
+            norm_x = inv_warp_pixel[0,0]/inv_warp_pixel[2,0]
+            norm_y = inv_warp_pixel[1,0]/inv_warp_pixel[2,0]
+            if norm_x >=0 and norm_x < width-1 and norm_y >=0 and norm_y < height-1:
+                weight = 1.0
+                if i < minX + blendWidth:
+                    weight = i/blendWidth
+                acc[i,j,0] = acc[i,j,0]*weight
+                acc[i,j,1] = acc[i,j,1]*weight
+                acc[i,j,2] = acc[i,j,2]*weight
+                acc[i,j,3] = acc[i,j,0] + acc[i,j,1] + acc[i,j,2]
+
+    return acc
+
+    # raise Exception("TODO in blend.py not implemented")
     #TODO-BLOCK-END
     # END TODO
 
@@ -67,7 +116,20 @@ def normalizeBlend(acc):
     # BEGIN TODO 11
     # fill in this routine..
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
+    height, width = acc.shape[0], acc.shape[1]
+
+    img = np.zeros(acc.shape[0], acc.shape[1], 3)
+
+    for i in range(0, height):
+        for j in range(0, width):
+            if acc[i,j,3] != 0:
+                img[i,j,0] = acc[i,j,0]/ acc[i,j,3]
+                img[i,j,1] = acc[i,j,1] / acc[i,j,3]
+                img[i,j,2] = acc[i,j,2] / acc[i,j,3]
+            else:
+                img[i,j,0] = 0
+                img[i,j,1] = 0
+                img[i,j,2] = 0
     #TODO-BLOCK-END
     # END TODO
     return img
@@ -109,7 +171,18 @@ def getAccSize(ipv):
         # BEGIN TODO 9
         # add some code here to update minX, ..., maxY
         #TODO-BLOCK-BEGIN
-        raise Exception("TODO in blend.py not implemented")
+        temp_minX, temp_minY, temp_maxX, temp_maxY = imageBoundingBox(img, M)
+        
+        if temp_minX < minX:
+            minX = temp_minX
+        if temp_minY < minY:
+            minY = temp_minY
+        if temp_maxX > maxX:
+            maxX = temp_maxX
+        if temp_maxY > maxY:
+            maxY = temp_maxY
+        
+        # raise Exception("TODO in blend.py not implemented")
         #TODO-BLOCK-END
         # END TODO
 
@@ -201,7 +274,9 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
     # Note: warpPerspective does forward mapping which means A is an affine
     # transform that maps accumulator coordinates to final panorama coordinates
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
+    # raise Exception("TODO in blend.py not implemented")
+
+
     #TODO-BLOCK-END
     # END TODO
 
