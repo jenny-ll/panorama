@@ -137,6 +137,8 @@ def alignPair(f1, f2, matches, m, nRANSAC, RANSACthresh):
     #This function should also call get_inliers and, at the end,
     #least_squares_fit.
     #TODO-BLOCK-BEGIN
+
+    max_inliers = []
     for n in range(nRANSAC):
         if m == 1: # eHomography
             sample_matches = random.sample(matches, 4)
@@ -145,9 +147,15 @@ def alignPair(f1, f2, matches, m, nRANSAC, RANSACthresh):
             sample_matches = random.sample(matches, 1)
             (x, y) = f1[sample_matches.queryIdx].pt
             (x2, y2) = f2[sample_matches.trainIdx].pt
-            h = np.array([x2-x, y2-y])
+            h = np.eye(3,3)
+            h[0,2] = x2-x
+            h[1,2] = y2-y
         inliers = getInliers(f1, f2, matches, h, RANSACthresh)
-        M = leastSquaresFit(f1, f2, matches, m, inliers)
+
+        if len(inliers) > len(max_inliers):
+            max_inliers = inliers
+
+    M = leastSquaresFit(f1, f2, matches, m, max_inliers)
         
     # raise Exception("TODO in alignment.py not implemented")
     #TODO-BLOCK-END
@@ -186,11 +194,19 @@ def getInliers(f1, f2, matches, M, RANSACthresh):
         #TODO-BLOCK-BEGIN
         (a_x, a_y) = f1[matches[i].queryIdx].pt
         (b_x, b_y) = f2[matches[i].trainIdx].pt
-        vector = [a_x, a_y, 1]
-        transformed = np.dot(vector, M)
+
+        vector = np.array([a_x, a_y, 1])
+        transformed = np.dot(M, vector)
+
+        transformed[0] = transformed[0] / transformed[2]
+        transformed[1] = transformed[1] / transformed[2]
+        transformed[2] = 1
+
         dist = np.linalg.norm([b_x, b_y, 1]-transformed)
-        if dist < RANSACthresh:
+
+        if dist <= RANSACthresh:
             inlier_indices.append(i)
+
         # raise Exception("TODO in alignment.py not implemented")
         #TODO-BLOCK-END
         #END TODO
@@ -238,8 +254,8 @@ def leastSquaresFit(f1, f2, matches, m, inlier_indices):
             #TODO-BLOCK-BEGIN
             (a_x, a_y) = f1[matches[inlier_indices[i]].queryIdx].pt
             (b_x, b_y) = f2[matches[inlier_indices[i]].trainIdx].pt
-            u = b_x - a_x
-            v = b_y - a_y
+            u = u + (b_x - a_x)
+            v = v + (b_y - a_y)
             # raise Exception("TODO in alignment.py not implemented")
             #TODO-BLOCK-END
             #END TODO

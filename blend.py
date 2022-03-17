@@ -87,16 +87,16 @@ def accumulateBlend(img, acc, M, blendWidth):
         for j in range(minY, maxY):
             pixel = np.array([i, j, 1]).T
             inv_warp_pixel = np.dot(np.linalg.inv(M), pixel)
-            norm_x = inv_warp_pixel[0,0]/inv_warp_pixel[2,0]
-            norm_y = inv_warp_pixel[1,0]/inv_warp_pixel[2,0]
+            norm_x = inv_warp_pixel[0]/inv_warp_pixel[2]
+            norm_y = inv_warp_pixel[1]/inv_warp_pixel[2]
             if norm_x >=0 and norm_x < width-1 and norm_y >=0 and norm_y < height-1:
                 weight = 1.0
                 if i < minX + blendWidth:
                     weight = i/blendWidth
-                acc[i,j,0] = acc[i,j,0]*weight
-                acc[i,j,1] = acc[i,j,1]*weight
-                acc[i,j,2] = acc[i,j,2]*weight
-                acc[i,j,3] = acc[i,j,0] + acc[i,j,1] + acc[i,j,2]
+                acc[j,i,0] = acc[j,i,0]*weight
+                acc[j,i,1] = acc[j,i,1]*weight
+                acc[j,i,2] = acc[j,i,2]*weight
+                acc[j,i,3] = acc[j,i,0] + acc[j,i,1] + acc[j,i,2]
 
     return acc
 
@@ -276,6 +276,8 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
     #TODO-BLOCK-BEGIN
     # raise Exception("TODO in blend.py not implemented")
 
+    if is360:
+        computeDrift(x_init, y_init, x_final, y_final, width)
 
     #TODO-BLOCK-END
     # END TODO

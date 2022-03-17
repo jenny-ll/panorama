@@ -87,8 +87,8 @@ def computeSphericalWarpMappings(dstShape, f, k1, k2):
     # 2. Apply radial distortion
 
     r_squared = x_n**2 + y_n**2
-    xt = x_n(1+k1*r_squared+k2*r_squared**2)
-    yt = y_n(1+k1*r_squared+k2*r_squared**2)
+    xt = x_n*(1+k1*r_squared+k2*r_squared**2)
+    yt = y_n*(1+k1*r_squared+k2*r_squared**2)
 
     # TODO-BLOCK-END
     # END TODO
