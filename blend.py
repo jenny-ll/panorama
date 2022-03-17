@@ -92,7 +92,9 @@ def accumulateBlend(img, acc, M, blendWidth):
             if norm_x >=0 and norm_x < width-1 and norm_y >=0 and norm_y < height-1:
                 weight = 1.0
                 if i < minX + blendWidth:
-                    weight = i/blendWidth
+                    weight = (i-minX)/blendWidth
+                if i < maxX - blendWidth:
+                    weight = (maxX-i)/blendWidth
                 acc[j,i,0] = acc[j,i,0]*weight
                 acc[j,i,1] = acc[j,i,1]*weight
                 acc[j,i,2] = acc[j,i,2]*weight
