@@ -80,78 +80,55 @@ def accumulateBlend(img, acc, M, blendWidth):
     # Fill in this routine
     #TODO-BLOCK-BEGIN
 
-    # use numpy slicing
+    minX, minY, maxX, maxY = imageBoundingBox(img, M)
+    height, width = img.shape[0], img.shape[1]
 
-    h = img.shape[0]
-    w = img.shape[1]
-    
-    h_acc = acc.shape[0]
-    w_acc = acc.shape[1]
-    
-    ## get the bounding box of img in acc
-    minX, minY, maxX, maxY = imageBoundingBox(img,M)
-  
-    for i in range(minX,maxX,1):
-        for j in range(minY,maxY,1):
-            # don't want to include black pixels when inverse warping
-            ## whether current pixel black or white
-            p = np.array([i, j, 1.])
-            p = np.dot(np.linalg.inv(M),p)
-            newx = min(p[0] / p[2], w-1)
-            newy = min(p[1] / p[2], h-1)
+    print(minX, minY, maxX, maxY)
+    print(height, width)
+    for i in range(minX, maxX):
+        for j in range(minY, maxY):
+            inv_warp_pixel = np.array([i, j, 1.0])
+            inv_warp_pixel = np.dot(np.linalg.inv(M), inv_warp_pixel)
+            norm_x = min(inv_warp_pixel[0] / inv_warp_pixel[2], width-1) #resampled from original and normalized
+            norm_y = min(inv_warp_pixel[1] / inv_warp_pixel[2], height-1)
             
-            if newx <0 or newx >= w or newy < 0 or newy >= h:
-                continue
-            if img[int(newy), int(newx), 0] == 0 and img[int(newy), int(newx), 1] ==0 and img[int(newy), int(newx), 2] == 0:
-                continue
-            if newx >= 0 and newx < w-1 and newy >= 0 and newy < h-1:    
-                weight = 1.0
-                if newx >= minX and newx < minX + blendWidth:
-                    weight = 1. * (newx - minX) / blendWidth
-                if newx <= maxX and newx > maxX - blendWidth:
-                    weight = 1. * (maxX - newx) / blendWidth
-                acc[j,i,3] += weight
+            r = img[int(norm_y), int(norm_x), 0] 
+            g = img[int(norm_y), int(norm_x), 1]
+            b = img[int(norm_y), int(norm_x), 2]
+            if r == 0 and g == 0 and b == 0:
+                continue  
+            color = np.array([0, 0, 0])
+            flr_x = max(math.floor(norm_x), 0)
+            ceil_x = min(math.ceil(norm_x), width-1)
+            flr_y = max(math.floor(norm_y), 0)
+            ceil_y = min(math.ceil(norm_y), height-1)
+            x2 = ceil_x - norm_x 
+            x1 = norm_x - flr_x
+            y2 = ceil_y - norm_y 
+            y1 = norm_y - flr_y
+            for k in range(3):
+                color[k] = img[int(norm_y),int(norm_x),k]
+                c11 = img[flr_y, flr_x, k] 
+                c12 = img[flr_y, ceil_x, k]
+                c21 = img[ceil_y, flr_x, k]
+                c22 = img[ceil_y, ceil_x, k]
+                if x2 == 0 or x1 == 0 or y2 == 0 or y1 == 0:
+                    continue
+                new_color = (((c11 * x2) + (c12 * x1)) * y2) + (((c21 * x2) + (c22 * x1)) * y1)
+                color[k] = new_color
+
+            # blend with neighbour using distance map
+            if norm_x >=0 and norm_x < width-1 and norm_y >=0 and norm_y < height-1:
+                weight = 1.0 # the default for anything that's not in the blended width
+                if (norm_x < 0 + blendWidth) and (norm_x >= 0):
+                    weight = 1.0 * norm_x/blendWidth
+                if (norm_x > width - blendWidth) and (norm_x <= width):
+                    weight = 1.0 * (width - norm_x)/blendWidth
             
-                for k in range(3):
-                    acc[j,i,k] += img[int(newy),int(newx),k] * weight    
-
-    # minX, minY, maxX, maxY = imageBoundingBox(img, M)
-    # height, width = img.shape[0], img.shape[1]
-
-    # offset_xmin = minX + blendWidth
-
-    # for i in range(minX, maxX):
-    #     for j in range(minY, maxY):
-    #         pixel = np.array([i, j, 1]).T
-    #         inv_warp_pixel = np.dot(np.linalg.inv(M), pixel)
-    #         norm_x = inv_warp_pixel[0]/inv_warp_pixel[2] #resampled from original and normalized
-    #         norm_y = inv_warp_pixel[1]/inv_warp_pixel[2]
-
-    #         # blend with neighbour using distance map
-    #         if norm_x >=0 and norm_x < width-1 and norm_y >=0 and norm_y < height-1: # check for black pixels
-    #             weight = 1.0 # the default for anything that's not in the blended width
-    #             if norm_x < minX + blendWidth and norm_x >= minX:
-    #                 weight = (norm_x - minX)/blendWidth
-    #             if norm_x > maxX - blendWidth and norm_x <= maxX:
-    #                 weight = (maxX - norm_x)/blendWidth
-                
-    #             acc[j,i,3] = acc[j,i,3] + weight #keep adding weights to the 4th
-    #             acc[j,i,0] = img[int(norm_x), int(norm_y), 0]*weight  
-    #             acc[j,i,1] = img[int(norm_y), int(norm_y), 1]*weight     
-    #             acc[j,i,2] = img[int(norm_x), int(norm_y), 2]*weight     
-
-            # ------------        
-
-            # if norm_x >=0 and norm_x < width-1 and norm_y >=0 and norm_y < height-1:
-            #     weight = 1.0
-            #     if norm_x < minX + blendWidth:
-            #         weight = (i-minX)/blendWidth
-            #     if norm_x < maxX - blendWidth:
-            #         weight = (maxX-i)/blendWidth
-            #     acc[j,i,0] = acc[j,i,0]*weight
-            #     acc[j,i,1] = acc[j,i,1]*weight
-            #     acc[j,i,2] = acc[j,i,2]*weight
-            #     acc[j,i,3] = acc[j,i,3] + weight
+                acc[j,i,3] = acc[j,i,3] + weight #keep adding weights to the 4th
+                acc[j,i,0] = acc[j,i,0] + (color[0]*weight)
+                acc[j,i,1] = acc[j,i,1] + (color[1]*weight)     
+                acc[j,i,2] = acc[j,i,2] + (color[2]*weight)
 
     return acc
 
@@ -171,36 +148,21 @@ def normalizeBlend(acc):
     # BEGIN TODO 11
     # fill in this routine..
     #TODO-BLOCK-BEGIN
-    # height, width = acc.shape[0], acc.shape[1]
 
-    # img = np.zeros(acc.shape[0], acc.shape[1], 3)
-
-    # for i in range(0, height):
-    #     for j in range(0, width):
-    #         if acc[i,j,3] != 0:
-    #             img[i,j,0] = int(acc[i,j,0]/ acc[i,j,3])
-    #             img[i,j,1] = int(acc[i,j,1] / acc[i,j,3])
-    #             img[i,j,2] = int(acc[i,j,2] / acc[i,j,3])
-    #         else:
-    #             img[i,j,0] = 0
-    #             img[i,j,1] = 0
-    #             img[i,j,2] = 0
-
-    h_acc = acc.shape[0]
-    w_acc = acc.shape[1]
-    img = np.zeros((h_acc, w_acc, 3))
-    for i in range(0, w_acc, 1):
-        for j in range(0, h_acc, 1):
-            if acc[j,i,3]>0:
-                img[j,i,0] = int (acc[j,i,0] / acc[j,i,3])
-                img[j,i,1] = int (acc[j,i,1] / acc[j,i,3])
-                img[j,i,2] = int (acc[j,i,2] / acc[j,i,3])
+    height = acc.shape[0]
+    width = acc.shape[1]
+    img = np.zeros((height, width, 3))
+    for i in range(0, width):
+        for j in range(0, height):
+            if acc[j,i,3] > 0:
+                img[j,i,0] = int(acc[j,i,0] / acc[j,i,3])
+                img[j,i,1] = int(acc[j,i,1] / acc[j,i,3])
+                img[j,i,2] = int(acc[j,i,2] / acc[j,i,3])
             else:
                 img[j,i,0] = 0
                 img[j,i,1] = 0
                 img[j,i,2] = 0
     img = np.uint8(img)
-
 
     #TODO-BLOCK-END
     # END TODO
@@ -350,7 +312,7 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
 
     if is360:
         A = computeDrift(x_init, y_init, x_final, y_final, width)
-
+       
     #TODO-BLOCK-END
     # END TODO
 
@@ -363,4 +325,3 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
     )
 
     return croppedImage
-

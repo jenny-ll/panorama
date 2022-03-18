@@ -145,8 +145,8 @@ def alignPair(f1, f2, matches, m, nRANSAC, RANSACthresh):
             h = computeHomography(f1, f2, sample_matches)
         elif m == 0:
             sample_matches = random.sample(matches, 1)
-            (x, y) = f1[sample_matches.queryIdx].pt
-            (x2, y2) = f2[sample_matches.trainIdx].pt
+            (x, y) = f1[sample_matches[0].queryIdx].pt
+            (x2, y2) = f2[sample_matches[0].trainIdx].pt
             h = np.eye(3,3)
             h[0,2] = x2-x
             h[1,2] = y2-y
